@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>IPC Chat</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(120deg, #fceabb, #f8b500);
+      padding: 20px;
+      color: #333;
+    }
+
+    .container {
+      max-width: 650px;
+      margin: auto;
+      background: #fffefc;
+      border-radius: 15px;
+      padding: 25px;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+    }
+
+    h2, h3 {
+      text-align: center;
+      color: #444;
+    }
+
+    input, select, button {
+      width: 100%;
+      padding: 12px;
+      margin: 6px 0;
+      border-radius: 8px;
+      border: 1px solid #ddd;
+      font-size: 16px;
+    }
+
+    select {
+      background-color: #f3f3f3;
+    }
+
+    button {
+      background: #ff9900;
+      color: white;
+      border: none;
+      font-weight: bold;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+
+    button:hover {
+      background: #e68000;
+    }
+
+    #messages {
+      max-height: 250px;
+      overflow-y: auto;
+      border: 1px solid #ccc;
+      border-radius: 10px;
+      padding: 12px;
+      margin-top: 12px;
+      background: #fffaf2;
+    }
+
+    .msg {
+      padding: 8px;
+      margin-bottom: 6px;
+      border-bottom: 1px solid #eee;
+      font-size: 15px;
+    }
+
+    .msg::before {
+      content: "💬 ";
+    }
+
+    .label-icon {
+      display: flex;
+      align-items: center;
+      font-weight: bold;
+      margin-top: 10px;
+    }
+
+    .label-icon span {
+      margin-left: 5px;
+    }
+
+    .section-divider {
+      margin: 25px 0 10px;
+      border-top: 2px dashed #ccc;
+    }
+
+    .contact-icon {
+      margin-right: 8px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>💬 IPC Chat Interface</h2>
+
+    <div class="label-icon">👤 <span>Choose Contact:</span></div>
+    <select id="contactSelect"></select>
+
+    <div class="label-icon">✏️ <span>Type a Message:</span></div>
+    <input type="text" id="messageInput" placeholder="e.g. Hey there!">
+    <button id="sendBtn">🚀 Send Message</button>
+
+    <div id="messages"></div>
+
+    <div class="section-divider"></div>
+
+    <h3>➕ Add New Contact</h3>
+    <div class="label-icon">📛 <span>Name:</span></div>
+    <input type="text" id="newContactName" placeholder="e.g. Alice">
+    <div class="label-icon">📱 <span>Phone Number:</span></div>
+    <input type="text" id="newContactPhone" placeholder="e.g. 1234567890">
+    <button id="addContactBtn">➕ Add Contact</button>
+  </div>
+
+  <script>
+    const contactSelect = document.getElementById('contactSelect');
+    const messageInput = document.getElementById('messageInput');
+    const sendBtn = document.getElementById('sendBtn');
+    const messagesDiv = document.getElementById('messages');
+    const newContactName = document.getElementById('newContactName');
+    const newContactPhone = document.getElementById('newContactPhone');
+    const addContactBtn = document.getElementById('addContactBtn');
+
+    sendBtn.onclick = async () => {
+      const contact = contactSelect.value;
+      const message = messageInput.value.trim();
+      if (!message) return;
+
+      const fullMessage = `${contact}: ${message}`;
+      await fetch('/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: fullMessage })
+      });
+
+      messageInput.value = '';
+      loadMessages();
+    };
+
+    addContactBtn.onclick = async () => {
+      const name = newContactName.value.trim();
+      const phone = newContactPhone.value.trim();
+      if (!name || !phone) {
+        alert("⚠️ Please enter both name and phone.");
+        return;
+      }
+
+      const res = await fetch('/add_contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, phone })
+      });
+
+      const result = await res.json();
+      if (result.status === "contact added") {
+        newContactName.value = '';
+        newContactPhone.value = '';
+        loadContacts();
+        alert("✅ Contact added successfully!");
+      } else {
+        alert("❌ Error adding contact.");
+      }
+    };
+
+    async function loadMessages() {
+      const res = await fetch('/messages');
+      const data = await res.json();
+      messagesDiv.innerHTML = '';
+      data.forEach(m => {
+        const div = document.createElement('div');
+        div.className = 'msg';
+        div.textContent = `${m.timestamp} - ${m.message}`;
+        messagesDiv.appendChild(div);
+      });
+    }
+
+    async function loadContacts() {
+      const res = await fetch('/contacts');
+      const data = await res.json();
+      contactSelect.innerHTML = '';
+      data.forEach(c => {
+        const option = document.createElement('option');
+        option.value = c.name;
+        option.textContent = `👤 ${c.name} 📱 ${c.phone}`;
+        contactSelect.appendChild(option);
+      });
+    }
+
+    setInterval(loadMessages, 2000);
+    loadMessages();
+    loadContacts();
+  </script>
+</body>
+</html>

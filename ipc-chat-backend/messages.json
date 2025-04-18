@@ -1,0 +1,14 @@
+[
+  {
+    "to": "Taylor",
+    "message": "Hi",
+    "status": "sending",
+    "timestamp": "20:52:42"
+  },
+  {
+    "to": "Taylor",
+    "message": "Hi",
+    "status": "stored",
+    "timestamp": "20:52:43"
+  }
+]
